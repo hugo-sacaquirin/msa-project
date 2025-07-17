@@ -1,0 +1,205 @@
+openapi: 3.0.3
+info:
+  title: Project Management API
+  version: '1.0.0'
+  description: API for managing institutional projects and their associated goals.
+
+servers:
+  - url: http://localhost:8080/api
+
+tags:
+  - name: projects
+    description: Endpoints for institutional project management
+
+paths:
+  /projects:
+    post:
+      tags:
+        - projects
+      summary: Register a new project
+      operationId: createProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectRequest'
+      responses:
+        '201':
+          description: Project successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResultResponse'
+        '400':
+          description: Invalid data
+        '409':
+          description: Duplicate project
+
+  /projects/paged:
+    get:
+      tags:
+        - projects
+      summary: Get paged projects
+      operationId: getPagedProjects
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Paged list of projects
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectPagedResponse'
+
+  /projects/search:
+    get:
+      tags:
+        - projects
+      summary: Search projects with filters
+      operationId: searchProjects
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: name
+          in: query
+          schema: { type: string }
+        - name: code
+          in: query
+          schema: { type: string }
+        - name: type
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Projects found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectPagedResponse'
+
+  /projects/{id}:
+    put:
+      tags:
+        - projects
+      summary: Update an existing project
+      operationId: updateProject
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectRequest'
+      responses:
+        '200':
+          description: Project updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResultResponse'
+        '400':
+          description: Invalid data
+        '404':
+          description: Project not found
+        '409':
+          description: Duplicate project
+
+    delete:
+      tags:
+        - projects
+      summary: Deactivate a project (set status to 'inactive')
+      operationId: deactivateProject
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '204':
+          description: Project successfully deactivated
+        '404':
+          description: Project not found
+
+components:
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: Page number (starts at 0)
+      schema: { type: integer, default: 0 }
+    Size:
+      name: size
+      in: query
+      description: Number of elements per page
+      schema: { type: integer, default: 20 }
+    ProjectId:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer }
+      description: Project ID
+
+  schemas:
+    ProjectRequest:
+      type: object
+      required:
+        - name
+        - code
+        - projectType
+        - executionPeriod
+        - estimatedBudget
+        - geographicLocation
+        - status
+        - goalIds
+      properties:
+        id: { type: integer }
+        name: { type: string, minLength: 3, maxLength: 100 }
+        code: { type: string, minLength: 3, maxLength: 100 }
+        projectType: { type: string,minLength: 3, maxLength: 100 }
+        executionPeriod: { type: string, minLength: 3, maxLength: 100 }
+        estimatedBudget: { type: number, format: double }
+        geographicLocation: { type: string, minLength: 3, maxLength: 255 }
+        status: { type: string }
+        goalIds:
+          type: array
+          items: { type: integer }
+          description: List of goal IDs associated with this project
+
+    ProjectResponse:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        code: { type: string }
+        projectType: { type: string }
+        executionPeriod: { type: string }
+        estimatedBudget: { type: number }
+        geographicLocation: { type: string }
+        status: { type: string }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+        goals:
+          type: array
+          items:
+            $ref: '#/components/schemas/GoalResponse'
+
+    GoalResponse:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        description: { type: string }
+
+    ProjectResultResponse:
+      type: object
+      properties:
+        code: { type: string }
+        result: { type: string }
+
+    ProjectPagedResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectResponse'
